@@ -1,3 +1,4 @@
+from pymongo import MongoClient
 from quart import Quart, request, jsonify, send_from_directory, send_file
 from quart_cors import cors
 import json
@@ -13,6 +14,11 @@ db = client['chatgpt_database']  # Use your database name here
 conversations_collection = db['conversations']  # Use your collection name here
 model_comparisons_collection = db['model_comparisons']  # Use your collection name here
 
+@app.route('/.well-known/ai-plugin.json')
+async def ai_plugin_json():
+    return await send_from_directory('.well-known', 'ai-plugin.json')
+
+
 @app.before_serving
 async def create_databases():
     # Create the databases and collections if they don't exist
@@ -21,10 +27,6 @@ async def create_databases():
         db = client['chatgpt_database']
         db.create_collection('conversations')
         db.create_collection('model_comparisons')
-
-@app.route('/.well-known/ai-plugin.json')
-async def ai_plugin_json():
-    return await send_from_directory('.well-known', 'ai-plugin.json')
 
 @app.route('/openapi.yaml')
 async def serve_openapi():
