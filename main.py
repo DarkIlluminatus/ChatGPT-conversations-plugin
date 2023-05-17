@@ -3,6 +3,7 @@ from quart_cors import cors
 import json
 
 app = Quart(__name__)
+app = cors(app, allow_origin="https://chat.openai.com")  # Allow requests from chat.openai.com
 cors(app)
 
 @app.route('/.well-known/ai-plugin.json')
