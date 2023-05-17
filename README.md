@@ -1,3 +1,25 @@
+# ChatGPT-conversations-plugin
+
+[![License](https://img.shields.io/badge/license-GPL--3.0%20License%20with%20Additional%20Conditions-blue.svg)](LICENSE)
+
+## Overview
+
+This repository contains a plugin that enables ChatGPT to access previous conversations from a MongoDB database and provide context-aware responses based on the conversation history.
+
+## Features
+
+- Retrieve past conversations from a MongoDB database
+- Provide context-aware responses based on conversation history
+- Import conversation history from JSON and HTML files
+
+## Installation
+
+Clone the repository:
+
+git clone https://github.com/DarkIlluminatus/ChatGPT-conversations-plugin.git
+
+
+##Previous README.md for posterity:
 #This repository is a WIP
 The repository is not yet complete or functional, the below will soon be implemented. This work is essentially in pre-alpha status and this README will be modified accordingly as that status changes.
 
