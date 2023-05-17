@@ -1,10 +1,9 @@
 from quart import Quart, request, jsonify, send_from_directory, send_file
 from quart_cors import cors
 import json
-import os
 
 app = Quart(__name__)
-app = cors(app, allow_origin="https://chat.openai.com")
+cors(app)
 
 @app.route('/.well-known/ai-plugin.json')
 async def ai_plugin_json():
