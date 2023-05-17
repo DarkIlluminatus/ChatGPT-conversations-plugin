@@ -1,0 +1,6 @@
+quart
+quart-cors
+pymongo==3.12.1
+beautifulsoup4
+lxml
+json
