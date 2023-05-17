@@ -1,10 +1,26 @@
 from quart import Quart, request, jsonify, send_from_directory, send_file
 from quart_cors import cors
 import json
+import os
+from pymongo import MongoClient
 
 app = Quart(__name__)
-app = cors(app, allow_origin="https://chat.openai.com")  # Allow requests from chat.openai.com
-cors(app)
+app = cors(app, allow_origin="https://chat.openai.com")
+
+# Connect to MongoDB
+client = MongoClient('mongodb://localhost:27017/')
+db = client['chatgpt_database']  # Use your database name here
+conversations_collection = db['conversations']  # Use your collection name here
+model_comparisons_collection = db['model_comparisons']  # Use your collection name here
+
+@app.before_serving
+async def create_databases():
+    # Create the databases and collections if they don't exist
+    db_list = client.list_database_names()
+    if 'chatgpt_database' not in db_list:
+        db = client['chatgpt_database']
+        db.create_collection('conversations')
+        db.create_collection('model_comparisons')
 
 @app.route('/.well-known/ai-plugin.json')
 async def ai_plugin_json():
@@ -18,57 +34,44 @@ async def serve_openapi():
 async def serve_logo():
     return await send_file('logo.png')
 
-@app.route('/history', methods=['GET'])
-async def history():
-    # Get the search term from the query parameter (e.g., /history?search=hello)
-    search_term = request.args.get('search', '')
+@app.route('/model_comparisons', methods=['GET'])
+async def get_model_comparisons():
+    # Retrieve all model comparisons from the collection
+    model_comparisons = list(model_comparisons_collection.find())
+    return jsonify(model_comparisons)
 
-    # Load the conversation history from the JSON file
-    with open('conversations.json', 'r') as f:
-        conversations = json.load(f)
+@app.route('/conversations/<conversation_id>', methods=['GET'])
+async def get_conversation(conversation_id):
+    # Retrieve a specific conversation by its ID from the collection
+    conversation = conversations_collection.find_one({'id': conversation_id})
+    if conversation:
+        return jsonify(conversation)
+    else:
+        return jsonify({'error': 'Conversation not found'}), 404
 
-    # Filter the conversation history based on the search term
-    filtered_history = [entry for entry in conversations if search_term.lower() in entry.lower()]
+@app.route('/conversations/search', methods=['GET'])
+async def search_conversations():
+    query = request.args.get('query', '')
+    # Search for conversations containing the specified query term
+    conversations = list(conversations_collection.find({'$text': {'$search': query}}))
+    return jsonify(conversations)
 
-    # Return the filtered conversation history as a response
-    return jsonify({'history': filtered_history})
+@app.route('/conversations', methods=['POST'])
+async def add_conversation():
+    conversation = await request.get_json()
+    # Insert the new conversation into the collection
+    result = conversations_collection.insert_one(conversation)
+    return jsonify({'status': 'success', 'conversation_id': str(result.inserted_id)})
 
-
-@app.route('/update_history', methods=['POST'])
-async def update_history():
-    data = await request.get_json()
-    user_message = data.get('message', {}).get('content', '')
-    assistant_message = data.get('assistant', {}).get('content', '')
-    # Load the conversation history from the JSON file
-    with open('conversations.json', 'r') as f:
-        conversations = json.load(f)
-    # Update the conversation history
-    conversations.append({'user': user_message, 'assistant': assistant_message})
-    # Save the updated conversation history to the JSON file
-    with open('conversations.json', 'w') as f:
-        json.dump(conversations, f, indent=4)
-    return jsonify({'status': 'success'})
-
-@app.route('/import_data', methods=['POST'])
-async def import_data():
-    # Check if the data files exist
-    if not os.path.exists('filesforimport'):
-        return jsonify({'status': 'error', 'message': 'No data found for import. Please export your data and place it in the necessary folders.'}), 400
-
-    # Load and import each JSON data file
-    for filename in os.listdir('filesforimport'):
-        if filename.endswith('.json'):
-            with open(os.path.join('filesforimport', filename)) as f:
-                data = json.load(f)
-                # Update the conversation history
-                with open('conversations.json', 'r') as history_file:
-                    conversations = json.load(history_file)
-                conversations.extend(data)
-                # Save the updated conversation history to the JSON file
-                with open('conversations.json', 'w') as history_file:
-                    json.dump(conversations, history_file, indent=4)
-
-    return jsonify({'status': 'success'})
+@app.route('/conversations/<conversation_id>', methods=['PUT'])
+async def update_conversation(conversation_id):
+    conversation = await request.get_json()
+    # Update the existing conversation with the specified ID
+    result = conversations_collection.update_one({'id': conversation_id}, {'$set': conversation})
+    if result.modified_count > 0:
+        return jsonify({'status': 'success'})
+    else:
+        return jsonify({'error': 'Conversation not found'}), 404
 
 if __name__ == '__main__':
     app.run(debug=True, port=5003)
