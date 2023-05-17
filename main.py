@@ -1,6 +1,7 @@
 from quart import Quart, request, jsonify, send_from_directory, send_file
 from quart_cors import cors
 import json
+import os
 
 app = Quart(__name__)
 app = cors(app, allow_origin="https://chat.openai.com")
@@ -42,10 +43,31 @@ async def update_history():
     with open('conversations.json', 'r') as f:
         conversations = json.load(f)
     # Update the conversation history
-    conversations[user_message] = assistant_message
+    conversations.append({'user': user_message, 'assistant': assistant_message})
     # Save the updated conversation history to the JSON file
     with open('conversations.json', 'w') as f:
         json.dump(conversations, f, indent=4)
+    return jsonify({'status': 'success'})
+
+@app.route('/import_data', methods=['POST'])
+async def import_data():
+    # Check if the data files exist
+    if not os.path.exists('filesforimport'):
+        return jsonify({'status': 'error', 'message': 'No data found for import. Please export your data and place it in the necessary folders.'}), 400
+
+    # Load and import each JSON data file
+    for filename in os.listdir('filesforimport'):
+        if filename.endswith('.json'):
+            with open(os.path.join('filesforimport', filename)) as f:
+                data = json.load(f)
+                # Update the conversation history
+                with open('conversations.json', 'r') as history_file:
+                    conversations = json.load(history_file)
+                conversations.extend(data)
+                # Save the updated conversation history to the JSON file
+                with open('conversations.json', 'w') as history_file:
+                    json.dump(conversations, history_file, indent=4)
+
     return jsonify({'status': 'success'})
 
 if __name__ == '__main__':
