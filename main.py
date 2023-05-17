@@ -16,8 +16,7 @@ model_comparisons_collection = db['model_comparisons']  # Use your collection na
 
 @app.route('/.well-known/ai-plugin.json')
 async def ai_plugin_json():
-    return await send_from_directory('.well-known', 'ai-plugin.json')
-
+    return await send_from_directory(os.path.join(os.getcwd(), '.well-known'), 'ai-plugin.json')
 
 @app.before_serving
 async def create_databases():
