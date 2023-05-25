@@ -1,3 +1,5 @@
+##IMPORTANT: This project's development will be moving to the models folder of the -OMARG-AIR-AID Repository by DarkIlluminatus. Please update your OMARG-OS implementations accordingly to ensure updates continue to be implemented correctly.
+
 # ChatGPT-conversations-plugin
 
 [![License](https://img.shields.io/badge/license-GPL--3.0%20License%20with%20Additional%20Conditions-blue.svg)](LICENSE)
